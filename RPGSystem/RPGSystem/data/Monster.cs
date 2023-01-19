@@ -2,10 +2,10 @@
 {
     public class Monster
     {
-        public int Health { get; private set; }
+        public int Health { get; set; }
         public int DamageResistance { get; private set; }
 
-        public Monster(int _health, int _damage_resistance) { 
+        public Monster(int _health = 10, int _damage_resistance = 3) { 
             Health= _health;
             DamageResistance= _damage_resistance;   
         }

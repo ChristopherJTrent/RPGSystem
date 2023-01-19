@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace RPGSystem.data
@@ -15,6 +16,31 @@ namespace RPGSystem.data
         {
             Count = _count;
             Sides = _sides;
+        }
+        //@param _definition the d notation form of the desired die. eg 1d6
+        public Roller (string _definition)
+        {
+            Regex regex = new Regex(@"^(?<count>\d+)d(?<sides>\d+)$");
+            Match match = regex.Match(_definition);
+            if (match.Success)
+            {
+                int _count;
+                int _sides;
+                if (int.TryParse(match.Groups["count"].Value, out _count) 
+                    && int.TryParse(match.Groups["sides"].Value, out _sides))
+                {
+                    Count = _count;
+                    Sides = _sides;
+                    Console.WriteLine($"{_count}d{_sides}");
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid input '{_definition}.");
+                    Count = 0;
+                    Sides = 0;
+                }
+            }
+
         }
         public int roll()
         {
