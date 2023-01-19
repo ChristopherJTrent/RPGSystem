@@ -5,8 +5,8 @@ namespace RPGSystem
 {
     internal class Program
     {
-        const int TrialsPerWeapon = 100_000;
-        const int MaximumIterations = 20;
+        const int TrialsPerWeapon = 1_000_000;
+        const int MaximumIterations = 15;
 
         static async Task Main(string[] args)
         {
@@ -15,19 +15,19 @@ namespace RPGSystem
             foreach (Weapon current in WeaponDefs.weapons)
             {
                 tasks.Add(Task.Run(() => SimulateWeapon(current)));
-                
+
             }
             await Task.WhenAll(tasks);
             var stats = await AsyncStatisticsManager.GetStats();
-            foreach(var stat in stats)
+            foreach (var stat in stats)
             {
-                Console.WriteLine($"{stat.Key} - Average: {stat.Value.Average()}");
+                Console.WriteLine($"{stat.Key} - Average: {stat.Value.Data.Average()} \n Median: {sorted(stat.Value.Data.ToArray())[stat.Value.Data.Count / 2]}");
             }
         }
         static async Task SimulateWeapon(Weapon input)
         {
             Console.WriteLine("Started Simulation for: " + input.Name);
-            List<int> trials = new List<int>();
+            StatisticsUnit DataFrame = new StatisticsUnit();
             for (int i = 0; i < TrialsPerWeapon; i++)
             {
                 Monster m = new Monster();
@@ -35,21 +35,28 @@ namespace RPGSystem
                 while (m.Health > 0)
                 {
                     for (int attacks = 0; attacks < input.AttacksPerRound; attacks++)
-                    { 
+                    {
                         m.Health -= input.getDamage(m);
                     }
                     counter++;
-                    if(counter == MaximumIterations)
+                    if (counter == MaximumIterations)
                     {
-                        //Console.WriteLine($"{input.Name} failed to kill the monster in {MaximumIterations} rounds");
+                        DataFrame.failedTrials++;
                         break;
                     }
                 }
-                trials.Add(counter);
+                DataFrame.Data.Add(counter);
             }
-            await AsyncStatisticsManager.AddListAsync(input.Name, trials);
-            Console.WriteLine($"Completed simulation for: {input.Name}");
+            await AsyncStatisticsManager.AddListAsync(input.Name, DataFrame);
+            Console.WriteLine($"Completed simulation for: {input.Name}. \n\tNumber of failed kills in {MaximumIterations} rounds after {TrialsPerWeapon} trials: {DataFrame.failedTrials}.\n\tNumber of failures per 100,000: {(DataFrame.failedTrials * (TrialsPerWeapon / 100_000f)) / 100_000f}");
         }
+        private static int[] sorted(int[] array)
+        {
+            int[] result = array;
+            Array.Sort(result);
+            return result;
+        }
+
     }
 }
 

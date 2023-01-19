@@ -31,7 +31,7 @@ namespace RPGSystem.data
                 {
                     Count = _count;
                     Sides = _sides;
-                    Console.WriteLine($"{_count}d{_sides}");
+                    //Console.WriteLine($"{_count}d{_sides}");
                 }
                 else
                 {
