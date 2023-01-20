@@ -12,18 +12,19 @@ namespace RPGSystem.data
         public string Name { get; set; }
         public Roller Dice { get; private set; }
         public int AttacksPerRound { get; private set;}
-        public int DamageBonus { get; private set; }
-        public Weapon(string _name, Roller _dice, int _attacks_per_round, int damageBonus = 0)
+        public int ArmorPenetration { get; private set; }
+        public Weapon(string _name, Roller _dice, int _attacks_per_round, int ArmorPenetration = 0)
         {
             Name = _name;
             Dice = _dice;
             AttacksPerRound = _attacks_per_round;
-            DamageBonus = damageBonus;
+            this.ArmorPenetration = ArmorPenetration;
         }
         public int getDamage(Monster m)
         {
-            int damage = Dice.roll() + DamageBonus;
-            return damage > m.DamageResistance ? damage - m.DamageResistance : 0;
+            int damage = Dice.roll();
+            int modifiedDefenceRating = Math.Max(m.DamageResistance - ArmorPenetration, 0);
+            return damage > modifiedDefenceRating ? damage - modifiedDefenceRating : 0;
         }
     }
 }

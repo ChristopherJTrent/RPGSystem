@@ -1,12 +1,16 @@
 ﻿using RPGSystem.data;
 using System.ComponentModel;
+using System.Diagnostics.Metrics;
 
 namespace RPGSystem
 {
     internal class Program
     {
-        const int TrialsPerWeapon = 1_000_000;
-        const int MaximumIterations = 15;
+        const int TrialsPerWeapon = 10000;
+        const int MaximumIterations = 20;
+        const int AcceptableFailures = 250_000;
+        const double TargetMinimum = 6.0d;
+        const double TargetMaximum = 6.1d;
 
         static async Task Main(string[] args)
         {
@@ -18,10 +22,23 @@ namespace RPGSystem
 
             }
             await Task.WhenAll(tasks);
-            var stats = await AsyncStatisticsManager.GetStats();
+            var stats = from v in await AsyncStatisticsManager.GetStats()
+                        orderby v.Value.average descending
+                        select v;
+
             foreach (var stat in stats)
             {
-                Console.WriteLine($"{stat.Key} - Average: {stat.Value.Data.Average()} \n Median: {sorted(stat.Value.Data.ToArray())[stat.Value.Data.Count / 2]}");
+                Console.Write($"{stat.Key} - Average: ");
+                Console.ForegroundColor =
+                    stat.Value.average < TargetMinimum ?
+                        ConsoleColor.Yellow :
+                            stat.Value.average > TargetMaximum ?
+                                ConsoleColor.Red :
+                                ConsoleColor.Green;
+                Console.Write($"{stat.Value.average}");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.Write($"\n\tMedian: {stat.Value.median}\n");
+
             }
         }
         static async Task SimulateWeapon(Weapon input)
@@ -30,33 +47,42 @@ namespace RPGSystem
             StatisticsUnit DataFrame = new StatisticsUnit();
             for (int i = 0; i < TrialsPerWeapon; i++)
             {
-                Monster m = new Monster();
+                Monster m1 = new();
+                int result = await SimulateKill(input, m1);
+                if (result == MaximumIterations) DataFrame.failedTrials++;
+                DataFrame.Append(result);
+            }
+            DataFrame.UpdateDerivedValues();
+            Console.WriteLine("Updated Values " + DataFrame.failedTrials);
+            await AsyncStatisticsManager.AddListAsync(input.Name, DataFrame);
+            if (DataFrame.failedTrials > AcceptableFailures) { Console.ForegroundColor = ConsoleColor.Red; }
+            Console.WriteLine($"Completed simulation for: {input.Name}.");
+            Console.WriteLine($"\tNumber of failed kills in {MaximumIterations} rounds after {TrialsPerWeapon} trials: {DataFrame.failedTrials}.");
+            Console.WriteLine($"\tFailiure Rate Percentage {DataFrame.failedTrials / (float)TrialsPerWeapon * 100f}%");
+            Console.ForegroundColor = ConsoleColor.Gray;
+        }
+        public static async Task<int> SimulateKill(Weapon w, Monster m)
+        {
+            
+            return await Task.Run(() =>
+            {
                 int counter = 0;
                 while (m.Health > 0)
                 {
-                    for (int attacks = 0; attacks < input.AttacksPerRound; attacks++)
-                    {
-                        m.Health -= input.getDamage(m);
-                    }
                     counter++;
+                    for (int attacks = 0; attacks < w.AttacksPerRound; attacks++)
+                    {
+                        m.Health -= w.getDamage(m);
+                    }
+                    
                     if (counter == MaximumIterations)
                     {
-                        DataFrame.failedTrials++;
                         break;
                     }
                 }
-                DataFrame.Data.Add(counter);
-            }
-            await AsyncStatisticsManager.AddListAsync(input.Name, DataFrame);
-            Console.WriteLine($"Completed simulation for: {input.Name}. \n\tNumber of failed kills in {MaximumIterations} rounds after {TrialsPerWeapon} trials: {DataFrame.failedTrials}.\n\tNumber of failures per 100,000: {(DataFrame.failedTrials * (TrialsPerWeapon / 100_000f)) / 100_000f}");
+                return Task.FromResult(counter);
+            });
         }
-        private static int[] sorted(int[] array)
-        {
-            int[] result = array;
-            Array.Sort(result);
-            return result;
-        }
-
     }
 }
 
