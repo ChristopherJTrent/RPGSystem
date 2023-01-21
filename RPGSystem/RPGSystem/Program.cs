@@ -8,9 +8,9 @@ namespace RPGSystem
     {
         const int TrialsPerWeapon = 10000;
         const int MaximumIterations = 20;
-        const int AcceptableFailures = 250_000;
-        const double TargetMinimum = 6.0d;
-        const double TargetMaximum = 6.1d;
+        const int AcceptableFailures = TrialsPerWeapon/2;
+        const double TargetMinimum = 7d;
+        const double TargetMaximum = 8.9999d;
 
         static async Task Main(string[] args)
         {
@@ -44,22 +44,23 @@ namespace RPGSystem
         static async Task SimulateWeapon(Weapon input)
         {
             Console.WriteLine("Started Simulation for: " + input.Name);
-            StatisticsUnit DataFrame = new StatisticsUnit();
+            StatisticsUnit DataFrame1 = new StatisticsUnit();
+            StatisticsUnit DataFrame2 = new StatisticsUnit();
             for (int i = 0; i < TrialsPerWeapon; i++)
             {
                 Monster m1 = new();
-                int result = await SimulateKill(input, m1);
-                if (result == MaximumIterations) DataFrame.failedTrials++;
-                DataFrame.Append(result);
-            }
-            DataFrame.UpdateDerivedValues();
-            Console.WriteLine("Updated Values " + DataFrame.failedTrials);
-            await AsyncStatisticsManager.AddListAsync(input.Name, DataFrame);
-            if (DataFrame.failedTrials > AcceptableFailures) { Console.ForegroundColor = ConsoleColor.Red; }
-            Console.WriteLine($"Completed simulation for: {input.Name}.");
-            Console.WriteLine($"\tNumber of failed kills in {MaximumIterations} rounds after {TrialsPerWeapon} trials: {DataFrame.failedTrials}.");
-            Console.WriteLine($"\tFailiure Rate Percentage {DataFrame.failedTrials / (float)TrialsPerWeapon * 100f}%");
-            Console.ForegroundColor = ConsoleColor.Gray;
+                Monster m2 = new(2,4);
+                int result1 = await SimulateKill(input, m1);
+                if (result1 == MaximumIterations) DataFrame1.failedTrials++;
+                int result2 = await SimulateKill(input, m2);
+                if (result2 == MaximumIterations) DataFrame2.failedTrials++;
+                DataFrame1.Append(result1);
+                DataFrame2.Append(result2);
+            } 
+            DataFrame1.UpdateDerivedValues();
+            DataFrame2.UpdateDerivedValues();
+            await AsyncStatisticsManager.AddListAsync(input.Name, DataFrame1);
+            await AsyncStatisticsManager.AddListAsync('_'+input.Name, DataFrame2);
         }
         public static async Task<int> SimulateKill(Weapon w, Monster m)
         {
