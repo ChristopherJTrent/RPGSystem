@@ -20,6 +20,10 @@ namespace RPGSystem.data
             AttacksPerRound = _attacks_per_round;
             this.ArmorPenetration = ArmorPenetration;
         }
+
+        //defines a secondary constructor that takes a string definition for the dice instead of a created roller object.
+        public Weapon(string _name, string dice, int _attacks_per_round, int ArmorPenetration = 0) 
+            : this(_name, new Roller(dice), _attacks_per_round, ArmorPenetration) { }
         public int getDamage(Monster m)
         {
             int damage = Dice.roll();
