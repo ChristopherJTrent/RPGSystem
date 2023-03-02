@@ -18,15 +18,15 @@ namespace RPGSystem.data
             Sides = _sides;
         }
         //@param _definition the d notation form of the desired die. eg 1d6
-        public Roller (string _definition)
+        public Roller(string _definition) : this(Validate(_definition, out bool _)) { }
+        
+        public Roller(Match match)
         {
-            Regex regex = new Regex(@"^(?<count>\d+)d(?<sides>\d+)$");
-            Match match = regex.Match(_definition);
             if (match.Success)
             {
                 int _count;
                 int _sides;
-                if (int.TryParse(match.Groups["count"].Value, out _count) 
+                if (int.TryParse(match.Groups["count"].Value, out _count)
                     && int.TryParse(match.Groups["sides"].Value, out _sides))
                 {
                     Count = _count;
@@ -35,14 +35,19 @@ namespace RPGSystem.data
                 }
                 else
                 {
-                    Console.WriteLine($"Invalid input '{_definition}.");
+                    Console.WriteLine($"Invalid input.");
                     Count = 0;
                     Sides = 0;
                 }
             }
-
         }
-        public int roll()
+        public static Match Validate(string _definition, out bool success) {
+            Regex regex = new Regex(@"^(?<count>\d+)d(?<sides>\d+)$");
+            Match match = regex.Match(_definition);
+            success = match.Success;
+            return match;
+        }
+        public int Roll()
         {
             int total = 0;
             for (int i = 0; i < Count; i++)
